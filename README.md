@@ -16,14 +16,14 @@ Es una herramienta **defensiva**. No explota nada, no se conecta a ningún siste
 
 **Componentes exportados sin permiso.** Detecta activities, services, receivers y providers que otras apps del teléfono pueden invocar sin necesitar ningún permiso. Para cada uno muestra las acciones de sus `intent-filter`, que explican *por qué* está expuesto. Las entradas del launcher se excluyen, porque necesitan estar exportadas para que la app se pueda abrir.
 
-**Secretos en el código.** Busca en los strings de los archivos `.dex` y en el bundle de JavaScript de las apps React Native/Expo (`assets/index.android.bundle`, incluso compilado con Hermes) patrones de Google API keys, AWS access keys, llaves privadas, tokens JWT y URLs de Firebase. El reporte muestra solo los primeros 10 caracteres de cada secreto encontrado, porque una herramienta de seguridad no debe filtrar los secretos que detecta.
+**Secretos en el código.** Busca en los strings de los archivos `.dex` y en el bundle de JavaScript de las apps React Native/Expo (`assets/index.android.bundle`, incluso compilado con Hermes) patrones de Google API keys, AWS access keys, llaves privadas, tokens JWT, URLs de Firebase y URLs y keys de Supabase (`sb_secret_` como ALTO, `sb_publishable_` como BAJO). El reporte muestra solo los primeros 10 caracteres de cada secreto encontrado, porque una herramienta de seguridad no debe filtrar los secretos que detecta.
 
 ## Instalación
 
 Requiere Python 3 y [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone <url-del-repo>
+git clone https://github.com/ignacioaguayluz/apk-analyzer.git
 cd apk-analyzer
 uv sync
 ```
@@ -83,6 +83,7 @@ Un hallazgo no significa que la app sea maliciosa. Significa que algo merece rev
 - **Valores efectivos, no solo declarados.** Varios atributos de Android tienen valores por defecto que cambian según la versión. Revisar solo lo que está escrito produce falsos negativos.
 - **Evidencia junto al hallazgo.** Los componentes exportados se muestran con sus acciones, para que quien revisa pueda decidir sin abrir el manifest.
 - **Varias entradas al launcher.** Algunas apps tienen varios `activity-alias` como launcher (F-Droid puede disfrazarse de calculadora). Por eso se excluye cualquier componente con la categoría `LAUNCHER`, en lugar de comparar contra una única actividad principal.
+- **Supabase: secret vs. publishable.** La secret key salta las políticas RLS y nunca debe ir en una app, así que es ALTO. La publishable key es pública por diseño, así que es BAJO. El patrón de la secret key exige un carácter alfanumérico después del prefijo, porque Expo Router incluye el identificador interno `sb_secret__internal_expo_router_...`, que de otro modo sería un falso positivo.
 - **JWT como MEDIO.** Algunos tokens están hechos para ser públicos, como la *anon key* de Supabase, cuya seguridad depende de las políticas RLS y no de que la llave esté oculta.
 
 ## Limitaciones conocidas

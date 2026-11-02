@@ -123,6 +123,13 @@ PATRONES_SECRETOS = {
         "MEDIO",
     ),
     "Base de datos Firebase": (r"https://[a-z0-9-]+\.firebaseio\.com", "BAJO"),
+    # La secret key salta las políticas RLS: nunca debe estar en una app.
+    # Exigir un carácter alfanumérico tras el prefijo evita falsos positivos
+    # como "sb_secret__internal_expo_router_..." (identificador de Expo Router).
+    "Supabase secret key": (r"sb_secret_[A-Za-z0-9][A-Za-z0-9_-]{20,}", "ALTO"),
+    # La publishable key es pública por diseño; su seguridad depende de RLS.
+    "Supabase publishable key": (r"sb_publishable_[A-Za-z0-9_-]{20,}", "BAJO"),
+    "URL de Supabase": (r"https://[a-z0-9-]+\.supabase\.co", "BAJO"),
 }
 
 
