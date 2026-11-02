@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Analyzed binaries (never commit third-party or private apps)
+*.apk
+*.aab
+*.ipa
+
+# macOS
+.DS_Store
+
+# Local AI assistant instructions
+CLAUDE.md
