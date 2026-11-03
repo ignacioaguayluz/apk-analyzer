@@ -19,3 +19,6 @@ wheels/
 
 # Local AI assistant instructions
 CLAUDE.md
+
+# Generated reports (may contain partial secrets)
+*.html
