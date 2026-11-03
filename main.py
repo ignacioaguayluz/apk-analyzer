@@ -1,4 +1,5 @@
-import sys
+import argparse
+import json
 from loguru import logger
 from androguard.core.apk import APK
 import re
@@ -161,56 +162,120 @@ def buscar_secretos(apk):
     return sorted(hallazgos)
 
 
-def main():
-    if len(sys.argv) != 2:
-        print("Uso: uv run main.py ruta/al/archivo.apk")
-        sys.exit(1)
+def analizar(apk):
+    target = apk.get_target_sdk_version()
+    minimo = apk.get_min_sdk_version()
+    hallazgos = []
 
-    apk = APK(sys.argv[1])
-
-    print(f"Paquete: {apk.get_package()}")
-    print(f"Nombre:  {apk.get_app_name()}")
-    print(f"Versión: {apk.get_androidversion_name()}")
-    print(
-        f"SDK mínimo: {apk.get_min_sdk_version()}  |  SDK objetivo: {apk.get_target_sdk_version()}"
-    )
-
-    print("\nPermisos:")
-    for permiso in sorted(apk.get_permissions()):
-        print(f"  - {permiso}")
-
-    print("\nHallazgos:")
-    hallazgos = 0
     for permiso in sorted(apk.get_permissions()):
         if permiso in PERMISOS_RIESGOSOS:
             nivel, motivo = PERMISOS_RIESGOSOS[permiso]
-            print(f"  [{nivel}] {permiso.split('.')[-1]}: {motivo}")
-            hallazgos += 1
+            hallazgos.append(
+                {"categoria": "permiso", "nivel": nivel, "permiso": permiso, "motivo": motivo}
+            )
 
-    if hallazgos == 0:
+    for nivel, motivo in revisar_manifest(apk):
+        hallazgos.append({"categoria": "manifest", "nivel": nivel, "motivo": motivo})
+
+    for tipo, nombre, acciones in revisar_componentes(apk):
+        hallazgos.append(
+            {
+                "categoria": "componente",
+                "nivel": "ALTO" if tipo == "provider" else "MEDIO",
+                "tipo": tipo,
+                "nombre": nombre,
+                "acciones": acciones,
+            }
+        )
+
+    # Solo se guardan los primeros 10 caracteres: el reporte no debe filtrar el secreto.
+    for nivel, nombre, valor, origen in buscar_secretos(apk):
+        hallazgos.append(
+            {
+                "categoria": "secreto",
+                "nivel": nivel,
+                "tipo": nombre,
+                "valor_parcial": valor[:10],
+                "origen": origen,
+            }
+        )
+
+    return {
+        "app": {
+            "paquete": apk.get_package(),
+            "nombre": apk.get_app_name(),
+            "version": apk.get_androidversion_name(),
+            "sdk_minimo": int(minimo) if minimo else None,
+            "sdk_objetivo": int(target) if target else None,
+        },
+        "permisos": sorted(apk.get_permissions()),
+        "resumen": {
+            nivel: sum(1 for h in hallazgos if h["nivel"] == nivel)
+            for nivel in ["ALTO", "MEDIO", "BAJO"]
+        },
+        "hallazgos": hallazgos,
+    }
+
+
+def de_categoria(reporte, categoria):
+    return [h for h in reporte["hallazgos"] if h["categoria"] == categoria]
+
+
+def imprimir_texto(reporte):
+    app = reporte["app"]
+    print(f"Paquete: {app['paquete']}")
+    print(f"Nombre:  {app['nombre']}")
+    print(f"Versión: {app['version']}")
+    print(f"SDK mínimo: {app['sdk_minimo']}  |  SDK objetivo: {app['sdk_objetivo']}")
+
+    print("\nPermisos:")
+    for permiso in reporte["permisos"]:
+        print(f"  - {permiso}")
+
+    print("\nHallazgos:")
+    permisos = de_categoria(reporte, "permiso")
+    for h in permisos:
+        print(f"  [{h['nivel']}] {h['permiso'].split('.')[-1]}: {h['motivo']}")
+    if not permisos:
         print("  Ningún permiso de la lista de riesgo.")
 
     print("\nConfiguración del manifest:")
-    problemas = revisar_manifest(apk)
-    for nivel, motivo in problemas:
-        print(f"  [{nivel}] {motivo}")
+    problemas = de_categoria(reporte, "manifest")
+    for h in problemas:
+        print(f"  [{h['nivel']}] {h['motivo']}")
     if not problemas:
         print("  Sin problemas de configuración.")
 
     print("\nComponentes exportados sin permiso:")
-    componentes = revisar_componentes(apk)
-    for tipo, nombre, acciones in componentes:
-        nivel = "ALTO" if tipo == "provider" else "MEDIO"
-        print(f"  [{nivel}] {tipo}: {nombre}")
-        if acciones:
-            print(f"      acciones: {', '.join(acciones)}")
+    for h in de_categoria(reporte, "componente"):
+        print(f"  [{h['nivel']}] {h['tipo']}: {h['nombre']}")
+        if h["acciones"]:
+            print(f"      acciones: {', '.join(h['acciones'])}")
 
     print("\nPosibles secretos en el código:")
-    secretos = buscar_secretos(apk)
-    for nivel, nombre, valor, origen in secretos:
-        print(f"  [{nivel}] {nombre} ({origen}): {valor[:10]}...")
+    secretos = de_categoria(reporte, "secreto")
+    for h in secretos:
+        print(f"  [{h['nivel']}] {h['tipo']} ({h['origen']}): {h['valor_parcial']}...")
     if not secretos:
         print("  Ninguno encontrado.")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Análisis estático de seguridad para APKs de Android."
+    )
+    parser.add_argument("apk", help="ruta al archivo .apk")
+    parser.add_argument(
+        "--json", action="store_true", help="imprime el reporte en formato JSON"
+    )
+    args = parser.parse_args()
+
+    reporte = analizar(APK(args.apk))
+
+    if args.json:
+        print(json.dumps(reporte, ensure_ascii=False, indent=2))
+    else:
+        imprimir_texto(reporte)
 
 
 if __name__ == "__main__":

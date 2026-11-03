@@ -31,7 +31,20 @@ uv sync
 ## Uso
 
 ```bash
-uv run main.py ruta/al/archivo.apk
+uv run main.py ruta/al/archivo.apk          # reporte en texto
+uv run main.py ruta/al/archivo.apk --json   # reporte en JSON
+```
+
+El JSON tiene cuatro claves: `app` (paquete, nombre, versión y SDKs), `permisos` (todos los que pide la app), `resumen` (cantidad de hallazgos por nivel) y `hallazgos`. Cada hallazgo tiene siempre `categoria` (`permiso`, `manifest`, `componente` o `secreto`) y `nivel` (`ALTO`, `MEDIO` o `BAJO`), más los campos propios de su categoría. Los secretos se guardan solo con sus primeros 10 caracteres (`valor_parcial`).
+
+```json
+{
+  "categoria": "secreto",
+  "nivel": "BAJO",
+  "tipo": "URL de Supabase",
+  "valor_parcial": "https://mr",
+  "origen": "bundle JS"
+}
 ```
 
 ## Ejemplo: F-Droid 2.0.2
@@ -95,7 +108,8 @@ Un hallazgo no significa que la app sea maliciosa. Significa que algo merece rev
 
 ## Próximos pasos
 
-- [ ] Reporte en JSON y HTML
+- [x] Reporte en JSON
+- [ ] Reporte en HTML
 - [ ] Leer `network_security_config`
 - [x] Buscar secretos en el bundle de React Native
 - [ ] Buscar secretos en los recursos (`strings.xml`)
