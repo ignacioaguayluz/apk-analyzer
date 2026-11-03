@@ -18,7 +18,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: astral-sh/setup-uv@v6
+    - uses: astral-sh/setup-uv@v10.3.3
 
     # Inputs go through env vars, never interpolated into the script,
     # so a malicious input value cannot inject shell commands.

@@ -121,7 +121,7 @@ El repo incluye una action reutilizable (`action.yml`). En el workflow de una ap
     apk: app-release.apk
     fallar-en: ALTO          # opcional; vacío = nunca falla
 
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   if: always()               # sube el reporte aunque el análisis falle
   with:
     name: reporte-seguridad

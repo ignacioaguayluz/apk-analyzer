@@ -12,7 +12,7 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download a real APK (F-Droid)
         run: curl -fsSL -o F-Droid.apk https://f-droid.org/F-Droid.apk
@@ -40,7 +40,7 @@ jobs:
           echo "--fallar-en ALTO should have failed on F-Droid"
           exit 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: reporte-seguridad
