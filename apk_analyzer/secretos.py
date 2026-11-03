@@ -40,4 +40,11 @@ def buscar_secretos(apk):
         bundle = apk.get_file(BUNDLE_REACT_NATIVE).decode("latin-1")
         hallazgos |= secretos_en_texto(bundle, "bundle JS")
 
+    recursos = apk.get_android_resources()
+    if recursos is not None:
+        for paquete in recursos.get_packages_names():
+            strings = recursos.get_string_resources(paquete)
+            if strings:
+                hallazgos |= secretos_en_texto(strings.decode("utf-8", "replace"), "strings.xml")
+
     return sorted(hallazgos)
