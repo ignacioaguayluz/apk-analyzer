@@ -34,6 +34,7 @@ uv sync
 uv run main.py ruta/al/archivo.apk          # reporte en texto
 uv run main.py ruta/al/archivo.apk --json   # reporte en JSON
 uv run main.py ruta/al/archivo.apk --html reporte.html   # además guarda un reporte HTML
+uv run main.py ruta/al/archivo.apk --fallar-en ALTO       # código 1 si hay hallazgos ALTO
 ```
 
 El JSON tiene cuatro claves: `app` (paquete, nombre, versión y SDKs), `permisos` (todos los que pide la app), `resumen` (cantidad de hallazgos por nivel) y `hallazgos`. Cada hallazgo tiene siempre `categoria` (`permiso`, `manifest`, `componente` o `secreto`) y `nivel` (`ALTO`, `MEDIO` o `BAJO`), más los campos propios de su categoría. Los secretos se guardan solo con sus primeros 10 caracteres (`valor_parcial`).
@@ -100,6 +101,16 @@ Un hallazgo no significa que la app sea maliciosa. Significa que algo merece rev
 - **Supabase: secret vs. publishable.** La secret key salta las políticas RLS y nunca debe ir en una app, así que es ALTO. La publishable key es pública por diseño, así que es BAJO. El patrón de la secret key exige un carácter alfanumérico después del prefijo, porque Expo Router incluye el identificador interno `sb_secret__internal_expo_router_...`, que de otro modo sería un falso positivo.
 - **JWT como MEDIO.** Algunos tokens están hechos para ser públicos, como la *anon key* de Supabase, cuya seguridad depende de las políticas RLS y no de que la llave esté oculta.
 
+### Uso en CI
+
+`--fallar-en NIVEL` hace que la herramienta termine con código de salida `1` si hay al menos un hallazgo de ese nivel o uno más grave (`MEDIO` incluye `ALTO` y `MEDIO`). Así el pipeline se detiene antes de publicar la app. Sin la opción, la herramienta siempre termina con `0`. Un argumento inválido termina con `2`.
+
+| Código | Significado |
+| --- | --- |
+| `0` | Sin hallazgos en el umbral (o sin `--fallar-en`) |
+| `1` | Hay hallazgos del nivel indicado o más graves |
+| `2` | Error de uso (argumentos inválidos) |
+
 El reporte HTML es un solo archivo sin dependencias externas, con modo claro y oscuro. Todo texto que viene del APK se escapa con `html.escape`, porque un APK malicioso podría traer etiquetas en sus nombres de componentes y convertir el reporte en un vector de XSS.
 
 ## Limitaciones conocidas
@@ -113,7 +124,8 @@ El reporte HTML es un solo archivo sin dependencias externas, con modo claro y o
 
 - [x] Reporte en JSON
 - [x] Reporte en HTML
-- [ ] Exit code para CI (fallar el pipeline si hay hallazgos ALTO)
+- [x] Exit code para CI (`--fallar-en`)
+- [ ] Workflow de GitHub Actions de ejemplo
 - [ ] Leer `network_security_config`
 - [x] Buscar secretos en el bundle de React Native
 - [ ] Buscar secretos en los recursos (`strings.xml`)

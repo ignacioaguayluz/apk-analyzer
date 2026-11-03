@@ -9,6 +9,8 @@ from androguard.core.dex import DEX
 
 logger.remove()
 
+NIVELES = ["ALTO", "MEDIO", "BAJO"]
+
 PERMISOS_RIESGOSOS = {
     "android.permission.RECORD_AUDIO": ("ALTO", "Puede grabar audio con el micrófono"),
     "android.permission.ACCESS_FINE_LOCATION": ("ALTO", "Ubicación precisa por GPS"),
@@ -213,7 +215,7 @@ def analizar(apk):
         "permisos": sorted(apk.get_permissions()),
         "resumen": {
             nivel: sum(1 for h in hallazgos if h["nivel"] == nivel)
-            for nivel in ["ALTO", "MEDIO", "BAJO"]
+            for nivel in NIVELES
         },
         "hallazgos": hallazgos,
     }
@@ -368,6 +370,11 @@ def main():
     parser.add_argument(
         "--html", metavar="ARCHIVO", help="además guarda un reporte HTML en ARCHIVO"
     )
+    parser.add_argument(
+        "--fallar-en",
+        choices=NIVELES,
+        help="termina con código 1 si hay hallazgos de este nivel o uno más grave (para CI)",
+    )
     args = parser.parse_args()
 
     reporte = analizar(APK(args.apk))
@@ -382,6 +389,17 @@ def main():
         print(json.dumps(reporte, ensure_ascii=False, indent=2))
     else:
         imprimir_texto(reporte)
+
+    if args.fallar_en:
+        # NIVELES va de más a menos grave: "MEDIO" incluye ALTO y MEDIO.
+        graves = NIVELES[: NIVELES.index(args.fallar_en) + 1]
+        total = sum(reporte["resumen"][nivel] for nivel in graves)
+        if total:
+            print(
+                f"Falla: {total} hallazgo(s) de nivel {args.fallar_en} o más grave",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
 
 if __name__ == "__main__":
