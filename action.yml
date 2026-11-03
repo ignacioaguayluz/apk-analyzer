@@ -1,0 +1,36 @@
+name: apk-analyzer
+description: Static security analysis for Android APKs, including React Native/Expo bundles.
+author: ignacioaguayluz
+
+inputs:
+  apk:
+    description: Path to the APK to analyze, relative to the workspace.
+    required: true
+  fallar-en:
+    description: Fail the step if there are findings at this level or more severe (ALTO, MEDIO or BAJO). Empty means never fail.
+    required: false
+    default: ""
+  html:
+    description: Path where the HTML report is written.
+    required: false
+    default: reporte-seguridad.html
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+
+    # Inputs go through env vars, never interpolated into the script,
+    # so a malicious input value cannot inject shell commands.
+    - name: Analyze APK
+      shell: bash
+      env:
+        APK: ${{ inputs.apk }}
+        FALLAR_EN: ${{ inputs.fallar-en }}
+        HTML: ${{ inputs.html }}
+      run: |
+        args=("$APK" --html "$HTML")
+        if [ -n "$FALLAR_EN" ]; then
+          args+=(--fallar-en "$FALLAR_EN")
+        fi
+        uv run --project "$GITHUB_ACTION_PATH" "$GITHUB_ACTION_PATH/main.py" "${args[@]}"

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download a real APK (F-Droid)
+        run: curl -fsSL -o F-Droid.apk https://f-droid.org/F-Droid.apk
+
+      - name: Analyze without threshold (must pass)
+        uses: ./
+        with:
+          apk: F-Droid.apk
+
+      - name: Check the HTML report was written
+        run: test -s reporte-seguridad.html
+
+      # F-Droid requests MANAGE_EXTERNAL_STORAGE (ALTO), so this step must fail.
+      - name: Analyze with threshold ALTO (must fail)
+        id: con-umbral
+        uses: ./
+        continue-on-error: true
+        with:
+          apk: F-Droid.apk
+          fallar-en: ALTO
+
+      - name: Check the threshold failed the step
+        if: steps.con-umbral.outcome != 'failure'
+        run: |
+          echo "--fallar-en ALTO should have failed on F-Droid"
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-seguridad
+          path: reporte-seguridad.html

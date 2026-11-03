@@ -111,6 +111,25 @@ Un hallazgo no significa que la app sea maliciosa. Significa que algo merece rev
 | `1` | Hay hallazgos del nivel indicado o más graves |
 | `2` | Error de uso (argumentos inválidos) |
 
+### Como GitHub Action
+
+El repo incluye una action reutilizable (`action.yml`). En el workflow de una app, después del paso que genera el APK:
+
+```yaml
+- uses: ignacioaguayluz/apk-analyzer@main
+  with:
+    apk: app-release.apk
+    fallar-en: ALTO          # opcional; vacío = nunca falla
+
+- uses: actions/upload-artifact@v4
+  if: always()               # sube el reporte aunque el análisis falle
+  with:
+    name: reporte-seguridad
+    path: reporte-seguridad.html
+```
+
+Los inputs se pasan al script como variables de entorno y no se interpolan en el comando, para evitar inyección de comandos en el workflow. El propio repo prueba la action en cada push contra el APK real de F-Droid (`.github/workflows/ci.yml`): verifica que sin umbral pase, que con `fallar-en: ALTO` falle y que el reporte HTML se genere.
+
 El reporte HTML es un solo archivo sin dependencias externas, con modo claro y oscuro. Todo texto que viene del APK se escapa con `html.escape`, porque un APK malicioso podría traer etiquetas en sus nombres de componentes y convertir el reporte en un vector de XSS.
 
 ## Limitaciones conocidas
@@ -125,7 +144,7 @@ El reporte HTML es un solo archivo sin dependencias externas, con modo claro y o
 - [x] Reporte en JSON
 - [x] Reporte en HTML
 - [x] Exit code para CI (`--fallar-en`)
-- [ ] Workflow de GitHub Actions de ejemplo
+- [x] GitHub Action reutilizable
 - [ ] Leer `network_security_config`
 - [x] Buscar secretos en el bundle de React Native
 - [ ] Buscar secretos en los recursos (`strings.xml`)
