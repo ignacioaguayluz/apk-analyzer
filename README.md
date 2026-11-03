@@ -153,4 +153,4 @@ El reporte HTML es un solo archivo sin dependencias externas, con modo claro y o
 
 ## Uso responsable
 
-Esta herramienta es para analizar apps propias, apps open source o apps sobre las que tengas autorización. Su objetivo es encontrar y corregir problemas, no aprovecharlos.
+Esta herramienta es para analizar apps propias, apps open source o apps sobre las que se tenga autorización. Su objetivo es encontrar y corregir problemas, hacer uso indebido de ellas..
