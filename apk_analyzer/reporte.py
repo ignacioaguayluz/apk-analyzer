@@ -1,5 +1,6 @@
 from apk_analyzer.componentes import revisar_componentes
 from apk_analyzer.manifest import PERMISOS_RIESGOSOS, revisar_manifest
+from apk_analyzer.red import revisar_config_red
 from apk_analyzer.secretos import buscar_secretos
 
 NIVELES = ["ALTO", "MEDIO", "BAJO"]
@@ -17,7 +18,7 @@ def analizar(apk):
                 {"categoria": "permiso", "nivel": nivel, "permiso": permiso, "motivo": motivo}
             )
 
-    for nivel, motivo in revisar_manifest(apk):
+    for nivel, motivo in revisar_manifest(apk) + revisar_config_red(apk):
         hallazgos.append({"categoria": "manifest", "nivel": nivel, "motivo": motivo})
 
     for tipo, nombre, acciones in revisar_componentes(apk):
