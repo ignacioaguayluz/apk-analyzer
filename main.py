@@ -145,7 +145,6 @@ def analizar(apk):
             }
         )
 
-    # Solo se guardan los primeros 10 caracteres: el reporte no debe filtrar el secreto.
     for nivel, nombre, valor, origen in buscar_secretos(apk):
         hallazgos.append(
             {
@@ -265,8 +264,6 @@ details { margin-top:32px; }
 
 
 def generar_html(reporte):
-    # Todo texto que viene del APK pasa por html.escape: un APK malicioso podría
-    # traer etiquetas en sus nombres y convertir el reporte en un ataque XSS.
     e = html.escape
     app = reporte["app"]
     partes = [
@@ -335,7 +332,6 @@ def main():
     if args.html:
         with open(args.html, "w", encoding="utf-8") as archivo:
             archivo.write(generar_html(reporte))
-        # Va a stderr para no ensuciar la salida JSON si se combinan las opciones.
         print(f"Reporte HTML guardado en {args.html}", file=sys.stderr)
 
     if args.json:
@@ -344,7 +340,6 @@ def main():
         imprimir_texto(reporte)
 
     if args.fallar_en:
-        # NIVELES va de más a menos grave: "MEDIO" incluye ALTO y MEDIO.
         graves = NIVELES[: NIVELES.index(args.fallar_en) + 1]
         total = sum(reporte["resumen"][nivel] for nivel in graves)
         if total:
