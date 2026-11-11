@@ -1,5 +1,20 @@
 # apk-analyzer
 
+Static security analyzer for Android apps. It takes an `.apk`, inspects it without running it, and reports security and privacy weaknesses:
+
+- **Risky permissions**, rated HIGH / MEDIUM / LOW with an explanation of the risk.
+- **Manifest settings**: `debuggable`, `allowBackup`, and `usesCleartextTraffic`, using the effective value Android applies.
+- **Exported components** (activities, services, receivers, providers) that other apps can call without a permission.
+- **Exposed secrets** in `.dex` files and React Native/Expo bundles (including Hermes): Google and AWS keys, private keys, JWTs, Firebase and Supabase credentials. Only the first 10 characters are shown.
+
+It is a defensive tool: it does not exploit anything or modify the APK. It outputs text, JSON, or HTML, and runs in CI as a GitHub Action with severity-based exit codes.
+
+Quick start: `uv sync`, then `uv run main.py path/to/app.apk`. Full documentation (in Spanish) below.
+
+---
+
+## Documentación en español
+
 Herramienta de **análisis estático de seguridad para apps Android**. Recibe un archivo `.apk`, lo inspecciona sin ejecutarlo y genera un reporte de debilidades de seguridad y privacidad: permisos riesgosos, configuración insegura del manifest, componentes expuestos a otras apps y secretos escritos en el código.
 
 Es una herramienta **defensiva**. No explota nada, no se conecta a ningún sistema y no modifica el APK. Su propósito es el mismo que el de los chequeos que se hacen antes de publicar una app o antes de aprobar su uso dentro de una empresa: detectar problemas a tiempo.
